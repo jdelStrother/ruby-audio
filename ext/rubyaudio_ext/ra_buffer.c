@@ -25,6 +25,7 @@ void Init_ra_buffer() {
     rb_define_method(cRABuffer, "real_size=",      ra_buffer_real_size_set, 1);
     rb_define_method(cRABuffer, "type",            ra_buffer_type, 0);
     rb_define_method(cRABuffer, "each",            ra_buffer_each, 0);
+    rb_define_method(cRABuffer, "peak",            ra_buffer_peak, 1);
     rb_define_method(cRABuffer, "[]",              ra_buffer_aref, 1);
     rb_define_method(cRABuffer, "[]=",             ra_buffer_aset, 2);
 
@@ -233,6 +234,49 @@ static VALUE ra_buffer_each(VALUE self) {
     }
     return self;
 }
+
+static VALUE ra_buffer_peak(VALUE self, VALUE channelIndexRb) {
+    RA_BUFFER *buf;
+    Data_Get_Struct(self, RA_BUFFER, buf);
+    long channelIndex=FIX2LONG(channelIndexRb);
+
+    long i;
+    if (buf->type==RA_BUFFER_TYPE_SHORT) {
+        short peak=0;
+        for(i = 0; i < buf->real_size; i++) {
+            short v=abs(((short*)buf->data)[i*buf->channels + channelIndex]);
+            if (v>peak) peak=v;
+        }
+        return INT2FIX(peak);
+
+    } else if (buf->type==RA_BUFFER_TYPE_INT) {
+        int peak=0;
+        for(i = 0; i < buf->real_size; i++) {
+            int v=abs(((int*)buf->data)[i*buf->channels + channelIndex]);
+            if (v>peak) peak=v;
+        }
+        return INT2FIX(peak);
+
+    } else if (buf->type==RA_BUFFER_TYPE_FLOAT) {
+        float peak=0;
+        for(i = 0; i < buf->real_size; i++) {
+            float v=fabsf(((float*)buf->data)[i*buf->channels + channelIndex]);
+            if (v>peak) peak=v;
+        }
+        return rb_float_new(peak);
+
+    } else if (buf->type==RA_BUFFER_TYPE_DOUBLE) {
+        double peak=0;
+        for(i = 0; i < buf->real_size; i++) {
+            double v=fabs(((double*)buf->data)[i*buf->channels + channelIndex]);
+            if (v>peak) peak=v;
+        }
+        return rb_float_new(peak);
+    }
+
+    return Qnil;
+}
+
 
 /*
  * call-seq:
